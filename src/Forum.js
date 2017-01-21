@@ -2,125 +2,120 @@ import React, { Component } from 'react';
 import base from './config'
 
 class Forum extends Component {
- constructor () {
-   super()
-   this.state = {
-     userName: "",
-     forum: "",
-     room: []
-   }
+ constructor() {
+     super()
+     this.state = {
+         userName: "",
+         forum: "",
+         room: []
+     }
  }
 
- componentDidMount () {
-   base.fetch(`${this.props.params.forum}`, {
-     context: this,
-     then: (data) => {
-       this.setState({
-         forum: data
-       })
-     }
-   })
-   this.sync = base.syncState(`${this.props.params.forum}/room`, {
-       state: 'room',
-       context: this,
-       asArray: true
+ componentDidMount() {
+     base.fetch(`${this.props.params.forum}`, {
+         context: this,
+         then: (data) => {
+             this.setState({
+                 forum: data
+             })
+         }
+     })
+     this.sync = base.syncState(`${this.props.params.forum}/room`, {
+         state: 'room',
+         context: this,
+         asArray: true
      })
  }
 
- componentWillReceiveProps (nextProps) {
-   base.fetch(`${nextProps.params.forum}`, {
-     context: this,
-     then: (data) => {
-       this.setState({
-         forum: data
-       })
-     }
-   })
-   base.removeBinding(this.sync)
+ componentWillReceiveProps(nextProps) {
+     base.fetch(`${nextProps.params.forum}`, {
+         context: this,
+         then: (data) => {
+             this.setState({
+                 forum: data
+             })
+         }
+     })
+     base.removeBinding(this.sync)
      this.sync = base.syncState(`${nextProps.params.forum}/room`, {
-       state: 'room',
-       context: this,
-       asArray: true
+         state: 'room',
+         context: this,
+         asArray: true
      })
  }
 
- signUp () {
-  var pass = this.password.value;
-  if(pass.length <  6){
-    alert('password must be 6 or more characters')
-  } else {
-  base.createUser({
-     email: this.email.value,
-     password: this.password.value
-   })
-  this.setState ({
-    userName: this.email.value
-  })
- }
-   this.email.value = '',
-   this.password.value = ''
- }
-
- logIn(){
-   base.authWithPassword({
-     email: this.email.value,
-     password: this.password.value
-   }, this.authStateChanged.bind(this)).catch(err => console.error(err))
- }
-
- logOut(){
-   this.setState({
-     userName:''
-   })
-    base.unauth()
-  }
-
-  authStateChanged (error, user) {
-      if(error){
-        alert('wrong password')
-      } else if (user) {
-        this.setState({
-          userName: this.email.value
-        })
-      }
-    }
-
- addMessage (event) {
-   var date = new Date ()
-   event.preventDefault()
-   let newMessage = {
-     username: `${this.email.value}`,
-     message: this.message.value,
-     time: `${date}`
-   }
-   let newMessagesArray = this.state.room.concat(newMessage)
-   this.setState({
-     room: newMessagesArray
-   })
-   this.message.value = ''
- }
- deletePost(clickedPost){
-   var newRoom = this.state.room.filter(text => text !==clickedPost)
-   this.setState({
-     room: newRoom
-   })
- }
- editPost(editedPost, event){
-     event.preventDefault()
-     base.update(`${this.props.params.forum}/room`,{
-     data: {room: editedPost},
-     then(err){
-       if(!err){
-         console.log(err)
-       }
+ signUp() {
+     const password = this.password.value
+     if (password.length < 6) {
+         alert('password must be 6 or more characters')
+     } else {
+         base.createUser({
+             email: this.email.value,
+             password: this.password.value
+         })
+         const email = this.email.value
+         this.setState({
+             userName: email
+         }, () => {
+             this.email.value = '',
+                 this.password.value = ''
+         })
      }
-   })
  }
 
+ logIn() {
+     base.authWithPassword({
+         email: this.email.value,
+         password: this.password.value
+     }, this.authStateChanged.bind(this)).catch(err => console.error(err))
+ }
+
+ logOut() {
+     this.setState({
+         userName: ''
+     }, () => {
+         this.email.value = '',
+             this.password.value = ''
+     })
+     base.unauth()
+ }
+
+ authStateChanged(error, user) {
+     if (error) {
+         alert('wrong password')
+     } else if (user) {
+         console.log('auth state changed ', user)
+         this.setState({
+             userName: user.email
+         })
+     }
+ }
+
+ addMessage(event) {
+     var date = new Date()
+     event.preventDefault()
+     let newMessage = {
+         username: `${this.state.userName}`,
+         message: this.message.value,
+         time: `${date}`
+     }
+     let newMessagesArray = this.state.room.concat(newMessage)
+     this.setState({
+         room: newMessagesArray
+     })
+     this.message.value = ''
+ }
+
+ deletePost(clickedPost) {
+     var newRoom = this.state.room.filter(text => text !== clickedPost)
+     this.setState({
+         room: newRoom
+     })
+ }
  render() {
    return (
      <div>
-       <h3>{this.props.params.forum}</h3>
+       <h3>You are in: {this.props.params.forum}</h3>
 
        <form hidden={this.state.userName}>
          <input
@@ -132,12 +127,12 @@ class Forum extends Component {
          type='password' />
          <button
            type="submit"
-           onClick={this.signUp.bind(this)}
-           >Sign Up</button>
+           onClick={this.signUp.bind(this)}>Sign Up</button>
          <button
            type="submit"
            onClick={this.logIn.bind(this)}>Log In</button>
        </form>
+
        <button
          type="submit"
          onClick={this.logOut.bind(this)}
@@ -145,26 +140,25 @@ class Forum extends Component {
          Log Out
        </button>
 
-         <ul>
-           {this.state.room.map((text, index) => {
-             return <li key={index}>{text.username}: {text.message} posted at {text.time}
-             <button onClick={this.deletePost.bind(this, text)}>X</button>
-             <button onClick={this.editPost.bind(this, text)}>Edit post</button>
-             </li>
-           })}
-         </ul>
+       <ul>
+          {this.state.room.map((text, index) => {
+           return <li key={index}>{text.username}: {text.message} posted at {text.time}
+           <button onClick={this.deletePost.bind(this, text)}>X</button>
+           </li>
+         })}
+       </ul>
 
-         <form hidden={!this.state.userName}>
-           <input
+       <form hidden={!this.state.userName}>
+          <input
            ref={element => this.message = element}
            placeholder="type a message"/>
 
            <button
            onClick={this.addMessage.bind(this)}>
-           Send
-           </button>
-         </form>
-       </div>
+           Send Message
+          </button>
+       </form>
+      </div>
    );
  }
 }
